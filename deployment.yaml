@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: automation-demo
+  labels:
+    app: automation-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: automation-demo
+  template:
+    metadata:
+      labels:
+        app: automation-demo
+    spec:
+      containers:
+      - name: automation-demo
+        # Replace <registry>/<image_name>:<tag> via Ansible extra-vars
+        image: "{{ registry | default('automation-demo-registry') }}/{{ image_name | default('automation-demo') }}:{{ tag | default('latest') }}"
+        ports:
+        - containerPort: 5000
+        env:
+        - name: PORT
+          value: "5000"
