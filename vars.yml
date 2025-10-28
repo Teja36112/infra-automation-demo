@@ -1,0 +1,7 @@
+# vars file used for Ansible playbooks (edit values before use)
+registry: "ghcr.io/YourUser"    # set to "" for local-only (minikube option)
+image_name: "automation-demo"
+tag: "latest"
+push: true                     # set false if not pushing to registry
+kubeconfig_path: "~/.kube/config"
+manifests_path: "./k8s"
