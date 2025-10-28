@@ -1,0 +1,45 @@
+---
+# Deploy Kubernetes manifests with Ansible (uses community.kubernetes.k8s)
+# Example:
+# ansible-playbook -i ansible/inventory.ini ansible/playbooks/deploy_k8s.yml \
+#   -e "kubeconfig_path=~/.kube/config registry=ghcr.io/youruser image_name=automation-demo tag=latest"
+
+- name: Deploy k8s manifests
+  hosts: local
+  gather_facts: false
+  vars:
+    kubeconfig_path: "{{ kubeconfig_path | default('~/.kube/config') }}"
+    manifests_path: "./k8s"
+    registry: "{{ registry | default('ghcr.io/youruser') }}"
+    image_name: "{{ image_name | default('automation-demo') }}"
+    tag: "{{ tag | default('latest') }}"
+  tasks:
+    - name: Read template deployment manifest
+      template:
+        src: "{{ manifests_path }}/deployment.yaml"
+        dest: "/tmp/automation-demo-deployment.yaml"
+      vars:
+        registry: "{{ registry }}"
+        image_name: "{{ image_name }}"
+        tag: "{{ tag }}"
+
+    - name: Copy service manifest to /tmp
+      copy:
+        src: "{{ manifests_path }}/service.yaml"
+        dest: "/tmp/automation-demo-service.yaml"
+
+    - name: Apply Deployment
+      community.kubernetes.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition: "{{ lookup('file', '/tmp/automation-demo-deployment.yaml') | from_yaml }}"
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Apply Service
+      community.kubernetes.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition: "{{ lookup('file', '/tmp/automation-demo-service.yaml') | from_yaml }}"
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
