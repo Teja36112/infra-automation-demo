@@ -1,0 +1,35 @@
+---
+# Build and push Docker image using Ansible and community.docker
+# Usage example:
+# ansible-playbook -i ansible/inventory.ini ansible/playbooks/build_and_push.yml \
+#   -e "registry=ghcr.io/youruser image_name=automation-demo tag=latest push=true"
+
+- name: Build and push container image
+  hosts: local
+  gather_facts: false
+  vars:
+    registry: "{{ registry | default('ghcr.io/youruser') }}"
+    image_name: "{{ image_name | default('automation-demo') }}"
+    tag: "{{ tag | default('latest') }}"
+    push: "{{ push | default(true) }}"
+  tasks:
+    - name: Ensure Docker Python SDK installed (when needed)
+      pip:
+        name: docker
+      become: false
+
+    - name: Build Docker image
+      community.docker.docker_image:
+        build:
+          path: ./app
+        name: "{{ registry }}/{{ image_name }}"
+        tag: "{{ tag }}"
+        force_source: true
+      register: built_image
+
+    - name: Push Docker image to registry (if enabled)
+      when: push | bool
+      community.docker.docker_image:
+        name: "{{ registry }}/{{ image_name }}"
+        tag: "{{ tag }}"
+        push: true
